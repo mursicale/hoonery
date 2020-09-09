@@ -46,7 +46,11 @@
   |-
   ?:  |(?=(~ key-position) ?=(~ value-result))
   chart
-  $(chart (~(put by chart) i.key-position i.value-result), key-position t.key-position, value-result t.value-result)
+  %=  $
+  chart         (~(put by chart) i.key-position i.value-result) 
+  key-position  t.key-position
+  value-result  t.value-result
+  ==
 ++  rotation
   |=  [my-alphabet=tape my-steps=@ud]
   =/  length=@ud  (lent my-alphabet)
