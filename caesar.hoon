@@ -1,71 +1,47 @@
 :: from https://urbit.org/docs/tutorials/hoon/hoon-school/caesar/
 ::
 !:
-|=  [msg=tape steps=@ud]
-=<                      :: create the core first
-=.  msg  (cass msg)     :: downcase everything, temp subject
-:-  (shift msg steps)
-(unshift msg steps)
-
-|%
-++  alpha  "abcdefghijklmnopqrstuvwxyz"
+|=  [msg=tape steps=@ud op=?(%encode %decode %brute-force)]
+|^  ^-  $%([%out tape] [%brute-mass (list tape)])
+?.  =(op %brute-force)
+  [%out (turn msg nurt)]
+:-  %brute-mass
+|-
+?:  =(steps :(add (lent alpha) (lent big-alpha) (lent specials) (lent numbers)))
+  ~
+:-
+  (turn msg nurt)
+$(steps +(steps))
 ::
-++  shift
-  |=  [message=tape shift-steps=@ud]
-  ^-  tape
-  (operate message (encoder shift-steps))
-++  unshift
-  |=  [message=tape shift-steps=@ud]
-  ^-  tape
-  (operate message (decoder shift-steps))
-++  encoder
-  |=  [steps=@ud]
-  ^-  (map @t @t)
-  =/  value-tape=tape  (rotation alpha steps)
-  (space-adder alpha value-tape)
-++  decoder
-  |=  [steps=@ud]
-  ^-  (map @t @t)
-  =/  value-tape=tape  (rotation alpha steps)
-  (space-adder value-tape alpha)
-++  operate
-  |=  [message=tape shift-map=(map @t @t)]
-  ^-  tape
-  :: turn is haskell `map` so hoon=(list) hoon=(gate)
-  %+  turn  message
++|  %alphabets
+++  alpha      "abcdefghijklmnopqrstuvwxyz"
+++  big-alpha  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+++  specials   "!@#$%^&*()_+-="
+++  numbers    "1234567890"
+::
++|  %operators
+++  nurt
   |=  a=@t
-  (~(got by shift-map) a)
-  ::
-::::
-::  once the map is made, spaces need to be preserved with:
-++  space-adder
-  |=  [key-position=tape value-result=tape]
-  ^-  (map @t @t)
-  (~(put by (map-maker key-position value-result)) ' ' ' ')
-++  map-maker
-  |=  [key-position=tape value-result=tape]
-  ^-  (map @t @t)
-  =|  chart=(map @t @t)
-  :: freak out if the tapes aren't the same length
-  ::
-  ?.  =((lent key-position) (lent value-result))
-  ~|  %uneven-lengths  !!
-  :: otherwise recur to this point
+  (~(got by coder) a)
+++  zipper
+  |=  [a=tape b=tape]
+  ^-  (list [@t @t])
+  =|  result=(list [@t @t])
   |-
-  ?:  |(?=(~ key-position) ?=(~ value-result))
-  chart
-  %=  $
-  :: update the chart with a pair from the head of each tape
-  chart         (~(put by chart) i.key-position i.value-result)
-  :: then pop the heads off
-  key-position  t.key-position
-  value-result  t.value-result
-  ==
+  ?:  |(?=(~ a) ?=(~ b))
+    result
+  $(result [[i.a i.b] result], a t.a, b t.b)
 ++  rotation
-  |=  [my-alphabet=tape my-steps=@ud]
+  |=  my-alphabet=tape
   =/  length=@ud  (lent my-alphabet)
-  =+  (trim (mod my-steps length) my-alphabet)
-      :: trim returns [p q] , which tislus pins to the head of the
-      :: subject.
+  =/  rot-steps
+    ?:(=(op %decode) (sub length (mod steps length)) (mod steps length))
+  =+  (trim rot-steps my-alphabet)
   (weld q p)
+++  coder
+  ^-  (map @t @t)
+  =/  raw-tape  :(weld alpha big-alpha specials numbers)
+  =/  rot-tape  :(weld (rotation alpha) (rotation big-alpha) (rotation specials) (rotation numbers))
+  =|  output=(map @t @t)
+(~(gas by output) [[' ' ' '] (zipper raw-tape rot-tape)])
 --
